@@ -168,8 +168,10 @@
                         </div>
                         <div class="checkout__payment-methods">
                             <div class="form-check">
-                                <input class="form-check-input form-check-input_fill" type="radio" name="mode" id="mode3" value="cod">
-                                <label class="form-check-label" for="mode3">Cash on delivery</label>
+                                <h4>Payment Method:</h4>
+                                <br>
+                                <input class="form-check-input form-check-input_fill" type="radio" name="mode" id="mode3" value="cod" required>
+                                <label class="form-check-label" for="mode3">Cash on Delivery</label>
                             </div>
                         </div>
                         <button class="btn btn-primary btn-checkout">PLACE ORDER</button>
@@ -219,7 +221,7 @@
             cities = data;
             if(address){
                 populateCities(address.state);
-            }  
+            }
             console.log('Cities fetched', cities);
         });
 
@@ -230,7 +232,7 @@
                 
             if(address){
                 populateBarangays(address.city);
-            }  
+            }
             console.log('Barangays fetched', barangays);
         });
 
@@ -292,6 +294,6 @@
             }
             barangaySelect.add(option);
         });
-    } 
+    }
 </script>
 @endsection
