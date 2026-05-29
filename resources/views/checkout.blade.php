@@ -156,7 +156,7 @@
                                         <td align="right">₱{{ Cart::instance('cart')->subtotal() }}</td>
                                     </tr>
                                     <tr>
-                                        <th>SHIPPING FEE</th>
+                                        <th>TAX</th>
                                         <td align="right">₱{{ Cart::instance('cart')->tax() }}</td>
                                     </tr>
                                     <tr>
@@ -184,13 +184,8 @@
 <input type="hidden" id="addressData" value="{{ json_encode($address)}}">
 
 <script>
-    try {
-        var addressDataElement = document.getElementById('addressData');
-        var address = JSON.parse(addressDataElement.value);
-        console.log('Address Data:', address);
-    } catch (e) {
-        console.error('Error parsing JSON:', e);
-    }
+    var addressDataElement = document.getElementById('addressData');
+    var address = JSON.parse(addressDataElement.value || 'null');
     document.getElementById('editAddressBtn')?.addEventListener('click', function() {
         var addressForm = document.getElementById('addressForm');
         var currentAddress = document.getElementById('currentAddress');
@@ -212,7 +207,6 @@
         .then(data => {
             provinces = data;
             populateProvinces();
-            console.log('Provinces fetched', provinces);
         });
 
     fetch('/assets/ph-cities-list.json')
@@ -222,26 +216,21 @@
             if(address){
                 populateCities(address.state);
             }
-            console.log('Cities fetched', cities);
         });
 
     fetch('/assets/ph-brgy-list.json')
         .then(response => response.json())
         .then(data => {
             barangays = data;
-                
             if(address){
                 populateBarangays(address.city);
             }
-            console.log('Barangays fetched', barangays);
         });
 
     function populateProvinces() {
         const provinceSelect = document.querySelector('select[name="state"]');
         
         provinceSelect.innerHTML = '<option value="">Select Province</option>';
-        console.log("province testses", provinces)
-        console.log(address)
         provinces.forEach(province => {
             const option = document.createElement('option');
             option.text = province.province;
@@ -253,15 +242,11 @@
         });
     }
     document.querySelector('select[name="state"]').addEventListener('change', function() {
-        const selectedProvince = this.value;
-        console.log('Province selected:', selectedProvince);
-        populateCities(selectedProvince);
+        populateCities(this.value);
     });
 
     document.querySelector('select[name="city"]').addEventListener('change', function() {
-        const selectedCity = this.value;
-        console.log('City selected:', selectedCity);
-        populateBarangays(selectedCity);
+        populateBarangays(this.value);
     });
     function populateCities(province) {
         const citySelect = document.querySelector('select[name="city"]');
