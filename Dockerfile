@@ -26,17 +26,15 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# PHP dependencies
+# PHP dependencies first (cached layer)
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Node dependencies & build assets
-COPY package.json package-lock.json vite.config.js ./
-COPY resources resources/
-RUN npm ci && npm run build
-
-# Copy app source
+# Copy full source
 COPY . .
+
+# Build frontend assets AFTER full source is in place
+RUN npm ci && npm run build
 
 # Finish composer scripts now that full source is present
 RUN composer run-script post-autoload-dump --no-interaction || true
@@ -53,15 +51,14 @@ RUN mkdir -p storage/framework/views \
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
  && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Nginx config
+# Nginx + supervisor configs
 COPY docker/nginx.conf /etc/nginx/nginx.conf
-
-# Supervisor config (runs nginx + php-fpm together)
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-EXPOSE 80
-
+# Entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+EXPOSE 80
 
 CMD ["/entrypoint.sh"]
