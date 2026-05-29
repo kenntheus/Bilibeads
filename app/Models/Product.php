@@ -9,8 +9,15 @@ class Product extends Model
 {
     use HasFactory;
 
+    protected $guarded = ['id'];
+
+    protected $casts = [
+        'colors' => 'array',
+        'sizes'  => 'array',
+    ];
+
     public function category()
     {
-        return $this->belongsTo(Category::class,'category_id');
+        return $this->belongsTo(Category::class, 'category_id');
     }
 }
