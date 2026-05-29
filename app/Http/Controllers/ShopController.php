@@ -40,7 +40,7 @@ class ShopController extends Controller
         }
         $categories = Category::orderBy('name','ASC')->get();
         $products = Product::where(function($query) use($f_categories){
-            $query->whereIn('category_id',explode(',',$f_categories))->orWhereRaw("'".$f_categories."'=''");
+            $query->whereIn('category_id',explode(',',$f_categories))->orWhereRaw('? = \'\'', [$f_categories]);
         })
 
         ->where(function($query) use($min_price,$max_price){
