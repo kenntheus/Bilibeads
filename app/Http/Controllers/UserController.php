@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
@@ -31,7 +32,7 @@ class UserController extends Controller
         return view('user.orders', compact('orders'));
     }
 
-    public function order_details($order_id)
+    public function order_details(int $order_id)
     {
         $order = Order::where('user_id', Auth::user()->id)->where('id', $order_id)->first();
         if ($order) {
@@ -45,11 +46,24 @@ class UserController extends Controller
 
     public function order_cancel(Request $request)
     {
-        $order = Order::find($request->order_id);
+        $order = Order::where('id', $request->order_id)
+                      ->where('user_id', Auth::id())
+                      ->firstOrFail();
+
+        $orderItems = OrderItem::where('order_id', $order->id)->get();
+        foreach ($orderItems as $item) {
+            $product = Product::find($item->product_id);
+            if ($product) {
+                $product->quantity += $item->quantity;
+                $product->stock_status = 'instock';
+                $product->save();
+            }
+        }
+
         $order->status = "canceled";
         $order->canceled_date = Carbon::now();
         $order->save();
-        return back()->with('status', "Order has been cancelled! successfully");
+        return back()->with('status', "Order has been cancelled successfully");
     }
     public function edit(Request $request): View
     {
@@ -84,6 +98,7 @@ class UserController extends Controller
             'new_password' => ['required', 'string', 'confirmed', PasswordRules::defaults()],
         ]);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $user->password = Hash::make($request->new_password);
         $user->save();
