@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Surfsidemedia\Shoppingcart\Facades\Cart;
 use Illuminate\Support\Facades\Session;
@@ -27,27 +28,51 @@ class CartController extends Controller
 
     public function add_to_cart(Request $request)
     {
-        Cart::instance('cart')->add($request->id, $request->name, $request->quantity, $request->price)->associate('App\Models\Product');
+        $product = Product::findOrFail($request->id);
+
+        if ($product->stock_status === 'outofstock' || $product->quantity < 1) {
+            return redirect()->back()->with('error', 'This product is out of stock.');
+        }
+
+        $requestedQty = max(1, (int) $request->quantity);
+        $existingItem = Cart::instance('cart')->content()->where('id', $product->id)->first();
+        $currentCartQty = $existingItem ? $existingItem->qty : 0;
+
+        if ($currentCartQty + $requestedQty > $product->quantity) {
+            return redirect()->back()->with('error', "Only {$product->quantity} item(s) available. You already have {$currentCartQty} in your cart.");
+        }
+
+        $options = [];
+        if ($request->filled('color')) $options['color'] = $request->color;
+        if ($request->filled('size')) $options['size'] = $request->size;
+        if ($request->filled('instructions')) $options['instructions'] = $request->instructions;
+
+        Cart::instance('cart')->add($product->id, $product->name, $requestedQty, $product->sale_price, $options)
+            ->associate('App\Models\Product');
         return redirect()->back();
     }
 
-    public function increase_item_quantity($rowId)
+    public function increase_item_quantity(string $rowId)
     {
-        $product = Cart::instance('cart')->get($rowId);
-        $qty = $product->qty + 1;
-        Cart::instance('cart')->update($rowId, $qty);
+        $cartItem = Cart::instance('cart')->get($rowId);
+        $product = $cartItem->model;
+
+        if ($cartItem->qty + 1 > $product->quantity) {
+            return redirect()->back()->with('error', "Only {$product->quantity} item(s) available in stock.");
+        }
+
+        Cart::instance('cart')->update($rowId, $cartItem->qty + 1);
         return redirect()->back();
     }
 
-    public function reduce_item_quantity($rowId)
+    public function reduce_item_quantity(string $rowId)
     {
-        $product = Cart::instance('cart')->get($rowId);
-        $qty = $product->qty - 1;
-        Cart::instance('cart')->update($rowId, $qty);
+        $cartItem = Cart::instance('cart')->get($rowId);
+        Cart::instance('cart')->update($rowId, $cartItem->qty - 1);
         return redirect()->back();
     }
 
-    public function remove_item($rowId)
+    public function remove_item(string $rowId)
     {
         Cart::instance('cart')->remove($rowId);
         return redirect()->back();
@@ -125,7 +150,17 @@ class CartController extends Controller
             $orderItem->order_id = $order->id;
             $orderItem->price = $item->price;
             $orderItem->quantity = $item->qty;
+            $orderItem->options = $item->options->count() > 0 ? $item->options->toArray() : null;
             $orderItem->save();
+
+            $product = Product::find($item->id);
+            if ($product) {
+                $product->quantity = max(0, $product->quantity - $item->qty);
+                if ($product->quantity === 0) {
+                    $product->stock_status = 'outofstock';
+                }
+                $product->save();
+            }
         }
         if ($request->mode == "cod") {
             $transaction = new Transaction();
@@ -172,7 +207,12 @@ class CartController extends Controller
         foreach (Cart::instance('cart')->content() as $item) {
             DB::table('user_cart')->updateOrInsert(
                 ['user_id' => $user_id, 'product_id' => $item->id],
-                ['name' => $item->name, 'quantity' => $item->qty, 'price' => $item->price]
+                [
+                    'name'          => $item->name,
+                    'quantity'      => $item->qty,
+                    'price'         => $item->price,
+                    'customization' => $item->options->count() > 0 ? json_encode($item->options->toArray()) : null,
+                ]
             );
         }
     }
@@ -189,7 +229,9 @@ class CartController extends Controller
         $savedCartItems = DB::table('user_cart')->where('user_id', $user_id)->get();
 
         foreach ($savedCartItems as $item) {
-            Cart::instance('cart')->add($item->product_id, $item->name, $item->quantity, $item->price)->associate('App\Models\Product');
+            $options = $item->customization ? json_decode($item->customization, true) : [];
+            Cart::instance('cart')->add($item->product_id, $item->name, $item->quantity, $item->price, $options)
+                ->associate('App\Models\Product');
         }
     }
 }
