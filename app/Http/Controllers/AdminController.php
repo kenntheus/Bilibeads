@@ -67,14 +67,12 @@ class AdminController extends Controller
         return view("admin.category-add", compact('recentOrders'));
     }
 
-    public function GenerateCategoryThumbnailsImage($image, $imageName)
+    public function GenerateCategoryThumbnailsImage(\Illuminate\Http\UploadedFile $image, string $imageName)
     {
         $destinationPath = public_path('uploads/categories');
         $img = Image::read($image->getRealPath());
         $img->cover(124, 124, "top");
-        $img->resize(124, 124, function ($constraint) {
-            $constraint->aspectRatio();
-        })->save($destinationPath . '/' . $imageName);
+        $img->save($destinationPath . '/' . $imageName);
     }
 
     public function category_store(Request $request)
@@ -97,7 +95,7 @@ class AdminController extends Controller
         return redirect()->route('admin.categories')->with('status', 'Category has been Added Successfully!');
     }
 
-    public function category_edit($id)
+    public function category_edit(int $id)
     {
         $recentOrders = $this->getRecentOrders();
         $category = Category::find($id);
@@ -133,7 +131,7 @@ class AdminController extends Controller
 
 
     //Category Delete Function
-    public function category_delete($id)
+    public function category_delete(int $id)
     {
         $category = Category::find($id);
         if (File::exists(public_path('uploads/categories') . '/' . $category->image)) {
@@ -157,19 +155,16 @@ class AdminController extends Controller
         return view('admin.product-add', compact('categories', 'recentOrders'));
     }
 
-    public function GenerateProductThumbnailsImage($image, $imageName)
+    public function GenerateProductThumbnailsImage(\Illuminate\Http\UploadedFile $image, string $imageName)
     {
         $destinationPathThumbnail = public_path('uploads/products/thumbnails');
         $destinationPath = public_path('uploads/products');
         $img = Image::read($image->getRealPath());
         $img->cover(540, 689, "top");
-        $img->resize(540, 689, function ($constraint) {
-            $constraint->aspectRatio();
-        })->save($destinationPath . '/' . $imageName);
+        $img->save($destinationPath . '/' . $imageName);
 
-        $img->resize(104, 104, function ($constraint) {
-            $constraint->aspectRatio();
-        })->save($destinationPathThumbnail . '/' . $imageName);
+        $img->cover(104, 104, "top");
+        $img->save($destinationPathThumbnail . '/' . $imageName);
     }
 
     public function product_store(Request $request)
@@ -197,6 +192,12 @@ class AdminController extends Controller
         $product->featured = $request->featured;
         $product->quantity = $request->quantity;
         $product->category_id = $request->category_id;
+        $product->colors = $request->filled('colors')
+            ? array_values(array_filter(array_map('trim', explode(',', $request->colors))))
+            : null;
+        $product->sizes = $request->filled('sizes')
+            ? array_values(array_filter(array_map('trim', explode(',', $request->sizes))))
+            : null;
 
         $current_timestamp = Carbon::now()->timestamp;
 
@@ -232,7 +233,7 @@ class AdminController extends Controller
         return redirect()->route('admin.products')->with('status', 'Product has been Added Successfully!');
     }
 
-    public function product_edit($id)
+    public function product_edit(int $id)
     {
         $recentOrders = $this->getRecentOrders();
         $product = Product::find($id);
@@ -265,6 +266,12 @@ class AdminController extends Controller
         $product->featured = $request->featured;
         $product->quantity = $request->quantity;
         $product->category_id = $request->category_id;
+        $product->colors = $request->filled('colors')
+            ? array_values(array_filter(array_map('trim', explode(',', $request->colors))))
+            : null;
+        $product->sizes = $request->filled('sizes')
+            ? array_values(array_filter(array_map('trim', explode(',', $request->sizes))))
+            : null;
 
         $current_timestamp = Carbon::now()->timestamp;
 
@@ -315,7 +322,7 @@ class AdminController extends Controller
         return redirect()->route('admin.products')->with('status', 'Product has been Updated Successfully!');
     }
 
-    public function product_delete($id)
+    public function product_delete(int $id)
     {
         $product = Product::find($id);
         if (File::exists(public_path('uploads/products') . '/' . $product->image)) {
@@ -345,7 +352,7 @@ class AdminController extends Controller
         return view('admin.orders', compact('orders','recentOrders'));
     }
 
-    public function order_details($order_id)
+    public function order_details(int $order_id)
     {
         $recentOrders = $this->getRecentOrders();
         $order = Order::find($order_id);
@@ -357,18 +364,37 @@ class AdminController extends Controller
     public function update_order_status(Request $request)
     {
         $order = Order::find($request->order_id);
-        $order->status = $request->order_status;
-        if ($request->order_status == 'rejected') {
+
+        if (in_array($request->order_status, ['rejected', 'canceled'])) {
             $order->canceled_date = Carbon::now();
-        } elseif ($request->order_status == 'canceled') {
-            $order->canceled_date = Carbon::now();
+            $this->restoreOrderStock($order);
         } elseif ($request->order_status == 'processing') {
             $order->updated_date = Carbon::now();
         } elseif ($request->order_status == 'delivered') {
             $order->delivered_date = Carbon::now();
         }
+
+        $order->status = $request->order_status;
         $order->save();
         return back()->with("status", "Status changed successfully!");
+    }
+
+    private function restoreOrderStock(Order $order): void
+    {
+        // Only restore if the order was still active (avoid double-restoring)
+        if (in_array($order->status, ['canceled', 'rejected', 'delivered'])) {
+            return;
+        }
+
+        $items = OrderItem::where('order_id', $order->id)->get();
+        foreach ($items as $item) {
+            $product = Product::find($item->product_id);
+            if ($product) {
+                $product->quantity += $item->quantity;
+                $product->stock_status = 'instock';
+                $product->save();
+            }
+        }
     }
 
     public function search(Request $request)
