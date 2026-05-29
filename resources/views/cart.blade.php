@@ -27,6 +27,13 @@
                 </span>
             </a>
         </div>
+        @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+
         <div class="shopping-cart">
             @if($items->count()>0)
             <div class="cart-table__wrapper">
@@ -53,6 +60,15 @@
                                 <div class="shopping-cart__product-item__detail">
                                     <h4>{{$item->name}}</h4>
                                     <ul class="shopping-cart__product-item__options">
+                                        @if($item->options->has('color'))
+                                            <li><span class="fw-medium">Color:</span> {{ $item->options->color }}</li>
+                                        @endif
+                                        @if($item->options->has('size'))
+                                            <li><span class="fw-medium">Size:</span> {{ $item->options->size }}</li>
+                                        @endif
+                                        @if($item->options->has('instructions'))
+                                            <li><span class="fw-medium">Note:</span> {{ $item->options->instructions }}</li>
+                                        @endif
                                     </ul>
                                 </div>
                             </td>
@@ -112,7 +128,7 @@
                                     <td>₱{{Cart::instance('cart')->subtotal()}}</td>
                                 </tr>
                                 <tr>
-                                    <th>Shipping Fee</th>
+                                    <th>Tax</th>
                                     <td>₱{{Cart::instance('cart')->tax()}}</td>
                                 </tr>
                                 <tr>
