@@ -33,15 +33,16 @@ class AdminController extends Controller
     {
         $recentOrders = $this->getRecentOrders();
         $orders = Order::orderBy('created_at', 'DESC')->get()->take(10);
-        $dashboardDatas = DB::select("Select sum(total) As TotalAmount,
-                                    sum(if(status='ordered',total,0)) As TotalOrderedAmount,
-                                    sum(if(status='delivered',total,0)) As TotalDeliveredAmount,
-                                    sum(if(status='canceled',total,0)) As TotalCanceledAmount,
-                                    Count(*) As Total,
-                                    sum(if(status='ordered',1,0)) As TotalOrdered,
-                                    sum(if(status='delivered',1,0)) As TotalDelivered,
-                                    sum(if(status='canceled',1,0)) As TotalCanceled
-                                    From Orders
+        $dashboardDatas = DB::select("SELECT
+                                    SUM(total) AS TotalAmount,
+                                    SUM(CASE WHEN status='ordered' THEN total ELSE 0 END) AS TotalOrderedAmount,
+                                    SUM(CASE WHEN status='delivered' THEN total ELSE 0 END) AS TotalDeliveredAmount,
+                                    SUM(CASE WHEN status='canceled' THEN total ELSE 0 END) AS TotalCanceledAmount,
+                                    COUNT(*) AS Total,
+                                    SUM(CASE WHEN status='ordered' THEN 1 ELSE 0 END) AS TotalOrdered,
+                                    SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) AS TotalDelivered,
+                                    SUM(CASE WHEN status='canceled' THEN 1 ELSE 0 END) AS TotalCanceled
+                                    FROM orders
                                     ");
         return view('admin.index', compact('orders', 'dashboardDatas', 'recentOrders'));
     }
