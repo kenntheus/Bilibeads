@@ -12,6 +12,7 @@ RUN apk add --no-cache \
     freetype-dev \
     oniguruma-dev \
     libzip-dev \
+    libpq-dev \
     zip \
     unzip \
     mysql-client
