@@ -152,6 +152,22 @@
                         </div>
                     </fieldset>
                 </div>
+                <fieldset class="name">
+                    <div class="body-title mb-10">Bead Colors
+                        <span class="text-tiny fw-normal ms-1">(optional — comma-separated, e.g. Red, Blue, Gold)</span>
+                    </div>
+                    <input class="mb-10" type="text" placeholder="e.g. Red, Blue, Gold, Pearl White" name="colors" tabindex="0"
+                        value="{{ $product->colors ? implode(', ', $product->colors) : '' }}">
+                </fieldset>
+
+                <fieldset class="name">
+                    <div class="body-title mb-10">Available Sizes
+                        <span class="text-tiny fw-normal ms-1">(optional — comma-separated, e.g. 6in, 7in, 8in)</span>
+                    </div>
+                    <input class="mb-10" type="text" placeholder="e.g. 6in, 7in, 8in, 9in" name="sizes" tabindex="0"
+                        value="{{ $product->sizes ? implode(', ', $product->sizes) : '' }}">
+                </fieldset>
+
                 <div class="cols gap10">
                     <button class="tf-button w-full" type="submit">Save product</button>
                 </div>
