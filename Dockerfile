@@ -18,7 +18,7 @@ RUN apk add --no-cache \
 
 # PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install pdo pdo_mysql mbstring gd zip bcmath opcache
+ && docker-php-ext-install pdo pdo_mysql pdo_pgsql pgsql mbstring gd zip bcmath opcache
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -39,6 +39,14 @@ COPY . .
 
 # Finish composer scripts now that full source is present
 RUN composer run-script post-autoload-dump --no-interaction || true
+
+# Ensure all required storage directories exist
+RUN mkdir -p storage/framework/views \
+             storage/framework/sessions \
+             storage/framework/cache/data \
+             storage/app/public \
+             storage/logs \
+             bootstrap/cache
 
 # Storage & cache permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \

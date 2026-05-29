@@ -19,13 +19,17 @@ if [ -z "$APP_KEY" ]; then
   php artisan key:generate --force
 fi
 
+# Clear any stale caches first
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+
 # Run pending migrations
 php artisan migrate --force
 
-# Clear and warm config/route/view caches for production
+# Rebuild caches for production performance
 php artisan config:cache
 php artisan route:cache
-php artisan view:cache
 
 # Create storage symlink if not already present
 php artisan storage:link 2>/dev/null || true
