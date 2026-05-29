@@ -8,6 +8,14 @@
 
 <main class="pt-90">
     <div class="mb-md-1 pb-md-3"></div>
+    @if(session('error'))
+    <div class="container mt-3">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+    @endif
     <section class="product-single container">
         <div class="row">
             <div class="col-lg-7">
@@ -95,18 +103,71 @@
                 @else
                 <form name="addtocart-form" method="POST" action="{{ route('cart.add') }}">
                     @csrf
+                    <input type="hidden" name="id" value="{{ $product->id }}">
+
+                    @if($product->colors && count($product->colors) > 0)
+                    <div class="mb-3">
+                        <div class="fw-medium mb-2">Bead Color <span class="text-danger">*</span></div>
+                        <div class="d-flex flex-wrap gap-2" id="color-options">
+                            @foreach($product->colors as $color)
+                            <label class="bead-option-label">
+                                <input type="radio" name="color" value="{{ $color }}" class="bead-radio" required>
+                                <span class="bead-option-pill">{{ $color }}</span>
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($product->sizes && count($product->sizes) > 0)
+                    <div class="mb-3">
+                        <div class="fw-medium mb-2">Size <span class="text-danger">*</span></div>
+                        <div class="d-flex flex-wrap gap-2" id="size-options">
+                            @foreach($product->sizes as $size)
+                            <label class="bead-option-label">
+                                <input type="radio" name="size" value="{{ $size }}" class="bead-radio" required>
+                                <span class="bead-option-pill">{{ $size }}</span>
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+
+                    <div class="mb-3">
+                        <div class="fw-medium mb-2">Special Instructions <span class="text-muted" style="font-weight:400;font-size:.85rem;">(optional)</span></div>
+                        <textarea name="instructions" class="form-control" rows="2" maxlength="300"
+                            placeholder="e.g. gift wrapping, specific pattern, name to bead-spell..."></textarea>
+                    </div>
+
                     <div class="product-single__addtocart">
                         <div class="qty-control position-relative">
                             <input type="number" name="quantity" value="1" min="1" class="qty-control__number text-center">
                             <div class="qty-control__reduce">-</div>
                             <div class="qty-control__increase">+</div>
                         </div>
-                        <input type="hidden" name="id" value="{{ $product->id }}">
-                        <input type="hidden" name="name" value="{{ $product->name }}">
-                        <input type="hidden" name="price" value="{{ $product->sale_price }}">
                         <button type="submit" class="btn btn-primary">Add to Cart</button>
                     </div>
                 </form>
+
+                <style>
+                    .bead-option-label { cursor: pointer; }
+                    .bead-radio { display: none; }
+                    .bead-option-pill {
+                        display: inline-block;
+                        padding: 6px 16px;
+                        border: 2px solid #ccc;
+                        border-radius: 30px;
+                        font-size: .875rem;
+                        transition: all .15s ease;
+                        user-select: none;
+                    }
+                    .bead-radio:checked + .bead-option-pill {
+                        border-color: #b08968;
+                        background: #b08968;
+                        color: #fff;
+                    }
+                    .bead-option-pill:hover { border-color: #b08968; }
+                </style>
                 @endif
                 @endif
                 <div class="product-single__meta-info">
