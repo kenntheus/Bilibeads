@@ -88,7 +88,7 @@
                             <th class="text-center">Price</th>
                             <th class="text-center">Quantity</th>
                             <th class="text-center">Category</th>
-                            <!-- <th class="text-center">Options</th> -->
+                            <th class="text-center">Customization</th>
                             <th class="text-center">Return Status</th>
                             <th class="text-center">Action</th>
                         </tr>
@@ -109,7 +109,21 @@
                             <td class="text-center">₱{{$item->price}}</td>
                             <td class="text-center">{{$item->quantity}}</td>
                             <td class="text-center">{{$item->product->category->name}}</td>
-                            <!-- <td class="text-center">{{$item->options}}</td> -->
+                            <td class="text-center">
+                                @if($item->options)
+                                    @if(isset($item->options['color']))
+                                        <div><span class="fw-medium">Color:</span> {{ $item->options['color'] }}</div>
+                                    @endif
+                                    @if(isset($item->options['size']))
+                                        <div><span class="fw-medium">Size:</span> {{ $item->options['size'] }}</div>
+                                    @endif
+                                    @if(isset($item->options['instructions']))
+                                        <div><span class="fw-medium">Note:</span> {{ $item->options['instructions'] }}</div>
+                                    @endif
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td class="text-center">{{$item->rstatus == 0 ? "No":"Yes"}}</td>
                             <td class="text-center">
                                 <div class="list-icon-function view-icon">
