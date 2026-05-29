@@ -3,15 +3,11 @@ set -e
 
 echo "=== Bilibeads Deploy ==="
 
-# Fly.io injects DATABASE_URL for attached Postgres.
-# Parse it into Laravel's individual DB_ env vars when present.
+# Fly.io sets DATABASE_URL when Postgres is attached.
+# Laravel reads it natively via the 'url' key in config/database.php.
+# We just need to ensure DB_CONNECTION points to pgsql.
 if [ -n "$DATABASE_URL" ]; then
   export DB_CONNECTION=pgsql
-  export DB_HOST=$(echo "$DATABASE_URL" | awk -F'[@:/]' '{print $6}')
-  export DB_PORT=$(echo "$DATABASE_URL" | awk -F'[@:/]' '{print $7}')
-  export DB_DATABASE=$(echo "$DATABASE_URL" | awk -F'/' '{print $NF}')
-  export DB_USERNAME=$(echo "$DATABASE_URL" | awk -F'[/:@]' '{print $4}')
-  export DB_PASSWORD=$(echo "$DATABASE_URL" | awk -F'[/:@]' '{print $5}')
 fi
 
 # Generate app key if not already set
@@ -19,7 +15,7 @@ if [ -z "$APP_KEY" ]; then
   php artisan key:generate --force
 fi
 
-# Clear any stale caches first
+# Clear any stale cached config so env vars are always read fresh
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
@@ -27,8 +23,7 @@ php artisan view:clear
 # Run pending migrations
 php artisan migrate --force
 
-# Rebuild caches for production performance
-php artisan config:cache
+# Cache routes only (not config — lets DATABASE_URL be read from env each boot)
 php artisan route:cache
 
 # Create storage symlink if not already present
