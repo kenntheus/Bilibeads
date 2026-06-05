@@ -21,7 +21,6 @@
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}" type="text/css" />
     <link rel="stylesheet" type="text/css" href="{{ asset('css/sweetalert.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}" type="text/css" />
-    <link rel="stylesheet" href="{{ asset('assets/css/text_hover.css') }}" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     @stack('styles')
 </head>
